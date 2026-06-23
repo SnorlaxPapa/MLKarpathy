@@ -23,7 +23,7 @@ def cmp(s, dt, t):
     ex = torch.all(dt == t.grad).item()
     app = torch.allclose(dt, t.grad)
     maxdiff = (dt - t.grad).abs().max().item()
-    print(f'{s: 15s} | exact: {str(ex): 5s} | approximate: {str(app): 5s} | maxdiff: {maxdiff}')
+    print(f'{s:15s} | exact: {str(ex):5s} | approximate: {str(app):5s} | maxdiff: {maxdiff}')
 
 
 def init_params(n_embd, n_hidden, vocab_size, block_size):
@@ -112,7 +112,7 @@ def main():
                 bnvar_inv, bnvar, bndiff2, bndiff, hprebn, bnmeani,
                 embcat, emb]:
             t.retain_grad()
-        loss.backward()
+    loss.backward()
 
     # Exercise 1: backprop through the whole thing manually, 
     # backpropagating through exactly all of the variables 
@@ -145,7 +145,7 @@ def main():
     bnvar_loss = bnvar_inv_loss * -0.5 * (bnvar + 1e-5)**-1.5 #(1, 64)
     bndiff2_loss = bnvar_loss * 1/(n-1) #(1, 64)
     bndiff_loss += bndiff2_loss * 2 * bndiff#(32, 64)
-    hprebn_loss = bndiff_loss #(32, 64)
+    hprebn_loss = bndiff_loss.clone() #(32, 64)
     bnmeani_loss = (-1.0 * bndiff_loss).sum(0, keepdim=True) #(1, 64)
     hprebn_loss += bnmeani_loss * 1/n #(32, 64)
 
@@ -161,6 +161,38 @@ def main():
        for j in range(Xb.shape[1]):
           ix = Xb[k, j]
           C_loss[ix] += emb_loss[k, j]
+    cmp('logprobs', logprobs_diff, logprobs)
+    cmp('probs', probs_diff, probs)
+    cmp('counts_sum_inv', counts_sum_inv_diff, counts_sum_inv)
+    cmp('counts_sum', counts_sum_diff, counts_sum)
+    cmp('counts', counts_diff, counts)
+    cmp('norm_logits', norm_logits_diff, norm_logits)
+    cmp('logit_maxes', logit_maxes_diff, logit_maxes)
+    cmp('logits', logits_diff, logits)
+    cmp('h', h_loss, h)
+    cmp('W2', W2_loss, W2)
+    cmp('b2', b2_loss, b2)
+    cmp('hpreact', hpreact_loss, hpreact)
+    cmp('bngain', bngain_loss, bngain)
+    cmp('bnbias', bnbias_loss, bnbias)
+    cmp('bnraw', bnraw_loss, bnraw)
+    cmp('bnvar_inv', bnvar_inv_loss, bnvar_inv)
+    cmp('bnvar', bnvar_loss, bnvar)
+    cmp('bndiff2', bndiff2_loss, bndiff2)
+    cmp('bndiff', bndiff_loss, bndiff)
+    cmp('bnmeani', bnmeani_loss, bnmeani)
+    cmp('hprebn', hprebn_loss, hprebn)
+    cmp('embcat', embcat_loss, embcat)
+    cmp('W1', W1_loss, W1)
+    cmp('b1', b1_loss, b1)
+    cmp('emb', emb_loss, emb)
+    cmp('C', C_loss, C)
+
+    # Exercise 2: backprop through cross_entropy but all in one go
+    # to complete this challenge look at the mathematical expression of the loss,
+    # take the derivative, simplify the expression, and just write it out
+    probs = torch.softmax(logits, dim = 1)
+    logits_diff = probs - F.one_hot(Yb, num_classes=logits.shape[1]) / batch_size
 
 
 
