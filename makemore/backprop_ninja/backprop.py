@@ -194,6 +194,9 @@ def main():
     probs = torch.softmax(logits, dim = 1)
     logits_diff = probs - F.one_hot(Yb, num_classes=logits.shape[1]) / batch_size
 
+    #exericse 3
+    hpreact_fast = bngain * (hprebn - hprebn.mean(0, keepdim=True)) / torch.sqrt(hprebn.var(0, keepdim=True, unbiased=True) + 1e-5) + bnbias
+
 
 
 
